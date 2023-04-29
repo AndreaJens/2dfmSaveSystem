@@ -75,21 +75,25 @@ extern "C" {
                         std::ofstream file(LogFileName, std::ios_base::app);
                         file << "Load command received" << std::endl;
                         std::ifstream savefile(SaveFileName, std::ios::binary);
-                        char buffer[30];
-                        savefile.read(buffer, 30);
-                        savefile.close();
-                        SIZE_T writtenBytes = 0;
-                        WriteProcessMemory(phandle, (void*)SysVarA_Address, buffer, sizeof(buffer), &writtenBytes);
-                        file << "Written: " << writtenBytes << " bytes" << std::endl;
-                        std::ofstream savefilebck("bck_" + SaveFileName, std::ios::binary);
-                        for (int i = 0; i < writtenBytes; ++i) {
-                            savefilebck << buffer[i];
-                            char valueToWrite = buffer[i];
-                            WriteProcessMemory(phandle, (void*)(SysVarA_Address + i), &valueToWrite, sizeof(valueToWrite), 0);
+                        if (!savefile) {
+                            file << "Save file could not be loaded" << std::endl;
                         }
-                        savefilebck.close();
-                        file.close();
-
+                        else {
+                            char buffer[30];
+                            savefile.read(buffer, 30);
+                            savefile.close();
+                            SIZE_T writtenBytes = 0;
+                            WriteProcessMemory(phandle, (void*)SysVarA_Address, buffer, sizeof(buffer), &writtenBytes);
+                            file << "Written: " << writtenBytes << " bytes" << std::endl;
+                            std::ofstream savefilebck("bck_" + SaveFileName, std::ios::binary);
+                            for (int i = 0; i < writtenBytes; ++i) {
+                                savefilebck << buffer[i];
+                                char valueToWrite = buffer[i];
+                                WriteProcessMemory(phandle, (void*)(SysVarA_Address + i), &valueToWrite, sizeof(valueToWrite), 0);
+                            }
+                            savefilebck.close();
+                            file.close();
+                        }
                     }
                     // write the save variable to 0 after dumping
                     uint16_t valueZero = 0;
