@@ -21,35 +21,6 @@ extern "C" {
         DWORD SysVarA_Address = 0x004456B0; //position of System Variable A
         size_t bufferSize = 30; //32 bytes worth of System Variables to save (maybe 30? let's use SysVar P to trigger the save action)
         DWORD saveLoadTriggerVarAddress = SysVarA_Address + 30;
-        //DWORD pid = 0; //This will store our Process ID, used to read/write into the memory
-        //HWND hwnd = NULL; //Finally a handle to our window
-        //std::wofstream gfile(LogFileName, std::ios_base::app);
-        //gfile << L"Looking for window: " << gameName << std::endl;
-        //gfile.close();
-        //hwnd = FindWindow(NULL, gameName.c_str());
-        //if (!hwnd) //If none, display an error
-        //{
-        //    std::wofstream file(LogFileName, std::ios_base::app);
-        //    file << L"Window " << gameName << L"not found." << std::endl;
-        //    file.close();
-        //    gameName += L" -Test Play-";
-        //    file << L"Looking for window: " << gameName << std::endl;
-        //    hwnd = FindWindow(NULL, gameName.c_str());
-        //    if (!hwnd) {
-        //        std::wofstream file(LogFileName, std::ios_base::app);
-        //        file << L"Window " << gameName << L"not found." << std::endl;
-        //        running = false;
-        //        return;
-        //    }
-        //}
-        //else {
-        //    wchar_t wnd_title[256];
-        //    GetWindowText(hwnd, wnd_title, sizeof(wnd_title));
-        //    std::wofstream file(LogFileName, std::ios_base::app);
-        //    file << L"Window found with title " << wnd_title << std::endl;
-        //    file.close();
-        //}
-        //GetWindowThreadProcessId(hwnd, &pid); //Get the process id and place it in pid
         DWORD access =  PROCESS_VM_READ |
                         PROCESS_QUERY_INFORMATION |
                         PROCESS_VM_WRITE |
@@ -88,8 +59,6 @@ extern "C" {
                 if (result > 0) {
                     if (result == VALUE_SAVE) {
                         std::ofstream file(LogFileName, std::ios_base::app);
-                        //file << m_Time.time_since_epoch().count() << " bytes written: " << writtenLow << "/" << writtenHigh << " " <<
-                        //    (int)valueHigh << " " << (int)valueLow << " " << (int)result << std::endl;
                         file << "Save command received" << std::endl;
                         char buffer[30];
                         SIZE_T writtenBytes = 0;
@@ -97,7 +66,6 @@ extern "C" {
                         file << "Read: " << writtenBytes << " bytes" << std::endl;
                         file.close();
                         std::ofstream savefile(SaveFileName, std::ios::binary);
-                        //savefile << buffer;
                         for (int i = 0; i < writtenBytes; ++i) {
                             savefile << buffer[i];
                         }
@@ -105,8 +73,6 @@ extern "C" {
                     }
                     else if (result == VALUE_LOAD) {
                         std::ofstream file(LogFileName, std::ios_base::app);
-                        //file << m_Time.time_since_epoch().count() << " bytes written: " << writtenLow << "/" << writtenHigh << " " <<
-                        //    (int)valueHigh << " " << (int)valueLow << " " << (int)result << std::endl;
                         file << "Load command received" << std::endl;
                         std::ifstream savefile(SaveFileName, std::ios::binary);
                         char buffer[30];
@@ -116,7 +82,6 @@ extern "C" {
                         WriteProcessMemory(phandle, (void*)SysVarA_Address, buffer, sizeof(buffer), &writtenBytes);
                         file << "Written: " << writtenBytes << " bytes" << std::endl;
                         std::ofstream savefilebck("bck_" + SaveFileName, std::ios::binary);
-                        //savefile << buffer;
                         for (int i = 0; i < writtenBytes; ++i) {
                             savefilebck << buffer[i];
                             char valueToWrite = buffer[i];
@@ -160,7 +125,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             std::ofstream file(LogFileName, std::ios_base::app);
             file << "The DLL was detached..." << std::endl;
             file.close();
-            //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MonitorGameMemory, NULL, 0, NULL);
         }
         break;
     }

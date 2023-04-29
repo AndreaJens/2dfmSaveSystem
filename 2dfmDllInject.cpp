@@ -6,14 +6,6 @@
 #include "2dfmDllInject.h"
 
 #pragma comment(lib, "ws2_32.lib")
-// Esempio di variabile esportata
-//MY2DFMDLLINJECT_API int nMy2dfmDllInject=0;
-//
-//// Esempio di funzione esportata.
-//MY2DFMDLLINJECT_API int fnMy2dfmDllInject(void)
-//{
-//    return 0;
-//}
 
 MY2DFMDLLINJECT_API u_short int_ntohs(u_short s)
 {
@@ -39,9 +31,3 @@ MY2DFMDLLINJECT_API int PASCAL FAR int_WSAStartup(
     _Out_ LPWSADATA lpWSAData) {
     return WSAStartup(wVersionRequired, lpWSAData);
 }
-//
-//// Costruttore di una classe esportata.
-//CMy2dfmDllInject::CMy2dfmDllInject()
-//{
-//    return;
-//}
