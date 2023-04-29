@@ -1,5 +1,5 @@
 # 2D Fighter Maker 2002 - Persistent Save File
-A convoluted hack to allow 2D Fighter Maker 2002 games to have persistent data.
+A convoluted hack to allow 2D Fighter Maker 2002 games to have persistent data between game sessions.
 It works by DLL-hijacking the WSOCK32 DLL used by the engine and monitoring the memory to read and write the engine's System Variables A-O.
 
 ## How to use it
