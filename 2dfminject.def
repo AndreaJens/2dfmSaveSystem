@@ -1,0 +1,7 @@
+LIBRARY   WSOCK32
+EXPORTS
+   int_WSAStartup=WSAStartup @115
+   int_ntohs=ntohs @15
+   int_ntohl=ntohl @14
+   int_gethostbyname=gethostbyname @52
+   int_gethostname=gethostname @57
