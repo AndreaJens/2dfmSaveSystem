@@ -19,6 +19,7 @@ extern "C" {
         std::getline(ifile, gameName);
         // look for specific value of a System Variable
         DWORD SysVarA_Address = 0x004456B0; //position of System Variable A
+        DWORD StageSelect_Address = 0x0043010C; //memory position of stage selection field
         size_t bufferSize = 30; //32 bytes worth of System Variables to save (maybe 30? let's use SysVar P to trigger the save action)
         DWORD saveLoadTriggerVarAddress = SysVarA_Address + 30;
         DWORD access =  PROCESS_VM_READ |
@@ -26,22 +27,18 @@ extern "C" {
                         PROCESS_VM_WRITE |
                         PROCESS_VM_OPERATION;
         auto pid2 = GetCurrentProcessId();
-        std::ofstream file(LogFileName, std::ios_base::app);
-        file << "Attaching DLL to game process..." << std::endl;
-        file << "Own process handle is " << pid2 << std::endl;
-        file.close();
+        std::ofstream logfile(LogFileName, std::ios_base::app);
+        logfile << "Attaching DLL to game process..." << std::endl;
+        logfile << "Own process handle is " << pid2 << std::endl;
         HANDLE phandle = OpenProcess(access, 0, pid2); //Get permission to read
         if (!phandle) //Once again, if it fails, tell us
         {
-            std::ofstream file(LogFileName, std::ios_base::app);
-            file << "Could not get process handle." << std::endl;
+            logfile << "Could not get process handle." << std::endl;
             running = false;
             return;
         }
         else {
-            std::ofstream file(LogFileName, std::ios_base::app);
-            file << "Found process handle " << pid2 << std::endl;
-            file.close();
+            logfile << "Found process handle " << pid2 << std::endl;
         }
         while (running) {
             auto m_Time = std::chrono::system_clock::now();
@@ -56,27 +53,36 @@ extern "C" {
                 ReadProcessMemory(phandle, (void*)(address + 1), &valueHigh, sizeof(valueHigh), &writtenHigh);
                 uint32_t result = (uint32_t(valueHigh) << 8) | (uint32_t)valueLow;
                 m_StartTime = m_Time;
+                //file << "Reading value at time: " << duration << std::endl;
                 if (result > 0) {
-                    if (result == VALUE_SAVE) {
-                        std::ofstream file(LogFileName, std::ios_base::app);
-                        file << "Save command received" << std::endl;
+                    // select stage
+                    if (result >= (VALUE_LOAD + 1)) {
+                        valueLow = valueLow - (VALUE_LOAD + 1);
+                        char buffer[1] = { valueLow };
+                        logfile << "Stage selected command received: " << (uint32_t)valueLow << std::endl;
+                        SIZE_T writtenBytes = 0;
+                        WriteProcessMemory(phandle, (void*)StageSelect_Address, buffer, sizeof(buffer), &writtenBytes);
+                        logfile << "Written: " << writtenBytes << " bytes" << std::endl;
+                    }
+                    // save system vars (except P)
+                    else if (result == VALUE_SAVE) {
+                        logfile << "Save command received" << std::endl;
                         char buffer[30];
                         SIZE_T writtenBytes = 0;
                         ReadProcessMemory(phandle, (void*)SysVarA_Address, buffer, sizeof(buffer), &writtenBytes);
-                        file << "Read: " << writtenBytes << " bytes" << std::endl;
-                        file.close();
+                        logfile << "Read: " << writtenBytes << " bytes" << std::endl;
                         std::ofstream savefile(SaveFileName, std::ios::binary);
-                        for (int i = 0; i < writtenBytes; ++i) {
+                        for (SIZE_T i = 0; i < writtenBytes; ++i) {
                             savefile << buffer[i];
                         }
                         savefile.close();
                     }
+                    // load system vars (except P)
                     else if (result == VALUE_LOAD) {
-                        std::ofstream file(LogFileName, std::ios_base::app);
-                        file << "Load command received" << std::endl;
+                        logfile << "Load command received" << std::endl;
                         std::ifstream savefile(SaveFileName, std::ios::binary);
                         if (!savefile) {
-                            file << "Save file could not be loaded" << std::endl;
+                            logfile << "Save file could not be loaded" << std::endl;
                         }
                         else {
                             char buffer[30];
@@ -84,23 +90,24 @@ extern "C" {
                             savefile.close();
                             SIZE_T writtenBytes = 0;
                             WriteProcessMemory(phandle, (void*)SysVarA_Address, buffer, sizeof(buffer), &writtenBytes);
-                            file << "Written: " << writtenBytes << " bytes" << std::endl;
+                            logfile << "Written: " << writtenBytes << " bytes" << std::endl;
                             std::ofstream savefilebck("bck_" + SaveFileName, std::ios::binary);
-                            for (int i = 0; i < writtenBytes; ++i) {
+                            for (SIZE_T i = 0; i < writtenBytes; ++i) {
                                 savefilebck << buffer[i];
                                 char valueToWrite = buffer[i];
                                 WriteProcessMemory(phandle, (void*)(SysVarA_Address + i), &valueToWrite, sizeof(valueToWrite), 0);
                             }
                             savefilebck.close();
-                            file.close();
                         }
                     }
-                    // write the save variable to 0 after dumping
-                    uint16_t valueZero = 0;
-                    WriteProcessMemory(phandle, (void*)address, &valueZero, sizeof(valueZero), 0);
+                    if (result == VALUE_SAVE || result == VALUE_LOAD) {
+                        // write the save variable to 0 after dumping
+                        uint16_t valueZero = 0;
+                        WriteProcessMemory(phandle, (void*)address, &valueZero, sizeof(valueZero), 0);
+                    }
                 }
             }
-            Sleep(50);
+            Sleep(10);
         }
     }
 }
